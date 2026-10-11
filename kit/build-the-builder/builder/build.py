@@ -24,6 +24,7 @@ sys.path.insert(0, str(KIT))
 
 import freya
 from smart_builder.generator import generate_workflow
+from smart_builder.validator import validate_workflow_integrity
 
 
 def main():
@@ -79,6 +80,13 @@ def main():
         is_brief_b=is_brief_b,
     )
 
+    # Pre-flight offline integrity validation
+    is_valid, validation_errors = validate_workflow_integrity(workflow)
+    if not is_valid:
+        print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Workflow validation failed: {validation_errors}", file=sys.stderr)
+        sys.exit(1)
+    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Pre-flight schema & safety validation passed.")
+
     out_dir = KIT / "out"
     out_dir.mkdir(exist_ok=True)
     out_file = out_dir / f"{slot}.workflow.json"
@@ -114,6 +122,7 @@ def main():
         f"Multi-product Rules Active: {is_brief_b}\n"
         f"Target Slot: {slot}\n"
         f"Synthesized Nodes: {list(workflow.get('nodes', {}).keys())}\n"
+        f"Pre-flight Integrity Validation: PASSED\n"
         f"Freya Agent ID: {agent_id}\n"
         f"Freya Workflow ID: {workflow_id}\n"
         f"Exported Workflow Artifact: {out_file}\n"

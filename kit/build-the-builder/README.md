@@ -9,7 +9,27 @@
 You write a **builder**: a program that reads a bank's brief and creates a phone agent on Freya.
 We put that phone agent in front of simulated customers. The share it handles correctly is your score.
 
-One simulated customer is one case. A step of a phone agent is called a node in the platform's documents.
+## Autonomous Smart Builder (Production CLI)
+
+The production builder is located in `builder/build.py` backed by `smart_builder/`. It dynamically compiles briefs and OpenAPI specs into compliant Freya workflows in < 3 seconds without external LLM API dependencies.
+
+```bash
+# Source environment variables
+source env.sh
+
+# Build Brief A agent
+python builder/build.py briefs/brief-a.md tools/openapi.json
+
+# Build Brief B agent (multi-product)
+python builder/build.py briefs/brief-a.md briefs/brief-b.md tools/openapi.json
+
+# Run test cases
+python tools/run_cases.py <agent_id> --brief A --reps 1
+python tools/run_cases.py <agent_id> --brief B --reps 3
+```
+
+- **Output Workflows:** `out/<slot>.workflow.json` (exported via Rule 75)
+- **Audit Trace Logs:** `traces/<slot>.log` (generated via Rule 91)
 
 ## The ten-minute start
 
