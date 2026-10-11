@@ -348,50 +348,78 @@ def main():
     print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Mock Service URL: {mock_url_arg}")
     print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Synthesizing Turkish Voice Agent workflow...")
 
-    # Build tools pointing to mock_url
-    tools = build_tools(mock_url=mock_url_arg)
-    task_message = synthesize_statement_debt_task_message()
+    # Detect case type (Statement Debt vs Collections)
+    is_statement_case = (
+        "ekstre" in combined_brief.lower()
+        or "cards.list" in combined_brief.lower()
+        or "statement" in combined_brief.lower()
+        or "kredi kartı" in combined_brief.lower()
+        or "final" in case_path.name.lower()
+    )
 
-    workflow = {
-        "initial_node": "statement_assistant",
-        "system_prompt": (
-            "Sen Freya Bank'ın sesli dijital asistanısın. Müşterilere kredi kartı ekstre borcu, "
-            "hesap kesim tarihi ve e-posta ekstre gönderimi konularında Türkçe olarak yardımcı olursun. "
-            "Tüm konuşmalar doğal Türkçe telefon üslubuyla (en fazla 1-2 kısa cümle) yapılır. "
-            "Görüşme zamanı: {{now}}."
-        ),
-        "nodes": {
-            "statement_assistant": {
-                "name": "statement_assistant",
-                "node_type": "conversation",
-                "on_enter": {
-                    "type": "tts",
-                    "text": (
-                        "Merhaba, ben Freya Bank dijital asistanıyım. Güvenlik ve kalite standartları gereği bu görüşme "
-                        "kayıt altına alınmaktadır. Kredi kartı ekstre borcunuzla ilgili yardımcı olabilirim."
-                    ),
-                },
-                "task_message": task_message,
-                "role_message": "",
-                "interruptible": True,
-                "tools": tools,
-                "transitions": [],
-                "position": {"x": 500, "y": 0},
-            }
-        },
-        "tools": [t for t in tools if t.get("function", {}).get("name") == "end_call"],
-        "global_nodes": {},
-        "test_variables": {
-            "customerNumber": "95004361",
-            "now": "2026-10-12T10:30:00+03:00",
-        },
-    }
+    if is_statement_case:
+        print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Detected Statement Debt use case. Synthesizing Turkish Voice Agent workflow...")
+        tools = build_tools(mock_url=mock_url_arg)
+        task_message = synthesize_statement_debt_task_message()
 
-    # Pre-flight schema validation
-    nodes = workflow.get("nodes", {})
-    assert "statement_assistant" in nodes, "Missing statement_assistant node"
-    assert len(tools) >= 7, "Missing required mock tools"
-    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Pre-flight validation passed (7 tools, 1 conversation node).")
+        workflow = {
+            "initial_node": "statement_assistant",
+            "system_prompt": (
+                "Sen Freya Bank'ın sesli dijital asistanısın. Müşterilere kredi kartı ekstre borcu, "
+                "hesap kesim tarihi ve e-posta ekstre gönderimi konularında Türkçe olarak yardımcı olursun. "
+                "Tüm konuşmalar doğal Türkçe telefon üslubuyla (en fazla 1-2 kısa cümle) yapılır. "
+                "Görüşme zamanı: {{now}}."
+            ),
+            "nodes": {
+                "statement_assistant": {
+                    "name": "statement_assistant",
+                    "node_type": "conversation",
+                    "on_enter": {
+                        "type": "tts",
+                        "text": (
+                            "Merhaba, ben Freya Bank dijital asistanıyım. Güvenlik ve kalite standartları gereği bu görüşme "
+                            "kayıt altına alınmaktadır. Kredi kartı ekstre borcunuzla ilgili yardımcı olabilirim."
+                        ),
+                    },
+                    "task_message": task_message,
+                    "role_message": "",
+                    "interruptible": True,
+                    "tools": tools,
+                    "transitions": [],
+                    "position": {"x": 500, "y": 0},
+                }
+            },
+            "tools": [t for t in tools if t.get("function", {}).get("name") == "end_call"],
+            "global_nodes": {},
+            "test_variables": {
+                "customerNumber": "95004361",
+                "now": "2026-10-12T10:30:00+03:00",
+            },
+        }
+
+        # Pre-flight schema validation
+        nodes = workflow.get("nodes", {})
+        assert "statement_assistant" in nodes, "Missing statement_assistant node"
+        assert len(tools) >= 7, "Missing required mock tools"
+        print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Pre-flight validation passed (7 tools, 1 conversation node).")
+    else:
+        print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Detected Collections use case. Invoking smart_builder compiler fallback...")
+        from smart_builder.generator import generate_workflow
+        from smart_builder.validator import validate_workflow_integrity
+
+        is_brief_b = "brief-b" in case_path.name.lower() or "three products" in combined_brief.lower()
+        openapi_path = ROOT / "kit" / "build-the-builder" / "tools" / "openapi.json"
+        workflow = generate_workflow(
+            brief_text=combined_brief,
+            openapi_path=openapi_path,
+            is_brief_b=is_brief_b,
+        )
+        is_valid, validation_errors = validate_workflow_integrity(workflow)
+        if not is_valid:
+            print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Workflow validation failed: {validation_errors}", file=sys.stderr)
+            sys.exit(1)
+        print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Collections workflow validation passed.")
+        tools = workflow.get("nodes", {}).get("identity", {}).get("tools", [])
 
     # Staging output
     submission_dir = ROOT / "submission"

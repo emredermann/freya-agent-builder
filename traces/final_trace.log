@@ -1,13 +1,14 @@
-[2026-10-11 21:08:42] Target case folder: /Users/emre/Desktop/freya/final_case
-[2026-10-11 21:08:42] Mock Service URL: https://freya-bank-mock.delightful-mass-fe3.workers.dev
-[2026-10-11 21:08:42] Synthesizing Turkish Voice Agent workflow...
-[2026-10-11 21:08:42] Pre-flight validation passed (7 tools, 1 conversation node).
-[2026-10-11 21:08:42] Staged local workflow artifact to: /Users/emre/Desktop/freya/submission/final.workflow.json
-[2026-10-11 21:08:42] Publishing workflow to Freya...
-[2026-10-11 21:08:44] Freya Agent ID: 2bfd3773-5ead-443e-aa05-807cd7411691 | Workflow ID: 56713f2d-0993-4927-afe7-2b1f872f04d7
-[2026-10-11 21:08:44] Exported platform workflow to: /Users/emre/Desktop/freya/submission/final.workflow.json
-[2026-10-11 21:08:44] Audit trace written to: /Users/emre/Desktop/freya/traces/final_trace.log
-[2026-10-11 21:08:44] Submission manifest created: /Users/emre/Desktop/freya/submission.json
+[2026-10-12 00:53:23] Target case folder: /Users/emre/Desktop/freya/final_case
+[2026-10-12 00:53:23] Mock Service URL: https://freya-bank-mock.delightful-mass-fe3.workers.dev
+[2026-10-12 00:53:23] Synthesizing Turkish Voice Agent workflow...
+[2026-10-12 00:53:23] Detected Statement Debt use case. Synthesizing Turkish Voice Agent workflow...
+[2026-10-12 00:53:23] Pre-flight validation passed (7 tools, 1 conversation node).
+[2026-10-12 00:53:23] Staged local workflow artifact to: /Users/emre/Desktop/freya/submission/final.workflow.json
+[2026-10-12 00:53:23] Publishing workflow to Freya...
+[2026-10-12 00:53:24] Freya Agent ID: 2bfd3773-5ead-443e-aa05-807cd7411691 | Workflow ID: 56713f2d-0993-4927-afe7-2b1f872f04d7
+[2026-10-12 00:53:25] Exported platform workflow to: /Users/emre/Desktop/freya/submission/final.workflow.json
+[2026-10-12 00:53:25] Audit trace written to: /Users/emre/Desktop/freya/traces/final_trace.log
+[2026-10-12 00:53:25] Submission manifest created: /Users/emre/Desktop/freya/submission.json
 {
   "status": "success",
   "agent_id": "2bfd3773-5ead-443e-aa05-807cd7411691",
@@ -15,5 +16,5 @@
   "workflow_file": "/Users/emre/Desktop/freya/submission/final.workflow.json",
   "trace_file": "/Users/emre/Desktop/freya/traces/final_trace.log",
   "submission_file": "/Users/emre/Desktop/freya/submission.json",
-  "duration_seconds": 1.85
+  "duration_seconds": 1.35
 }
