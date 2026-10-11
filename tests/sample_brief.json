@@ -1,0 +1,38 @@
+{
+  "agent_name": "Elif - Collections Assistant",
+  "company_name": "Anadolu Bank",
+  "language": "en",
+  "brief": "Outbound call to a retail credit card customer whose minimum payment is 21 days overdue (4,250 TRY, due 12 September). Goal: verify the account holder's identity, state the overdue amount, and obtain a specific Promise-to-Pay with amount, date and payment method. Compliance rules (KVKK / FDCPA equivalent): do not disclose any debt information before identity verification; never discuss the debt with third parties; no threats, harassment or false legal claims; call only between 08:00 and 20:00 local time; stop immediately on a do-not-contact request or a bankruptcy / legal representation claim and escalate to a specialist; disclose that the caller is automated and the call is recorded; keep personal data minimal.",
+  "available_tools": [
+    {
+      "name": "verify_customer",
+      "description": "Verify the identity of the customer by date of birth or last four digits of national ID before any debt disclosure.",
+      "parameters": {"type": "object", "properties": {"customer_id": {"type": "string"}, "date_of_birth": {"type": "string"}}, "required": ["customer_id", "date_of_birth"]}
+    },
+    {
+      "name": "get_debt_details",
+      "description": "Get the overdue debt amount, due date and product for a verified customer.",
+      "parameters": {"type": "object", "properties": {"customer_id": {"type": "string"}}, "required": ["customer_id"]}
+    },
+    {
+      "name": "record_promise_to_pay",
+      "description": "Record a customer's promise to pay with amount, date and payment method.",
+      "parameters": {"type": "object", "properties": {"customer_id": {"type": "string"}, "amount": {"type": "number"}, "date": {"type": "string"}, "method": {"type": "string"}}, "required": ["customer_id", "amount", "date"]}
+    },
+    {
+      "name": "apply_new_credit_card",
+      "description": "Submit an application for a new credit card product.",
+      "parameters": {"type": "object", "properties": {"applicant_name": {"type": "string"}}}
+    },
+    {
+      "name": "weather_lookup",
+      "description": "Look up the current weather forecast for a city.",
+      "parameters": {"type": "object", "properties": {"city": {"type": "string"}}}
+    },
+    {
+      "name": "update_email_address",
+      "description": "Change the email address on file for a profile.",
+      "parameters": {"type": "object", "properties": {"email": {"type": "string"}}}
+    }
+  ]
+}

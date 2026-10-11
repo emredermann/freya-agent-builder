@@ -1,0 +1,29 @@
+# Environment & Secrets (CRITICAL)
+.env
+.env.*
+env.sh
+*.env
+.freya-agents.json
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Virtual Environment
+venv/
+.venv/
+env/
+.pyenv/
+
+# OS / Editor files
+.DS_Store
+.idea/
+.vscode/
+
+# Kit Archives & Temp
+*.zip
+*.tar.gz
+results/

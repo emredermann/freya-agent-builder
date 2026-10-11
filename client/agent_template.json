@@ -1,0 +1,232 @@
+{
+  "kind": "freya/agent-settings",
+  "version": 1,
+  "agentConfig": {
+    "llmConfig": {
+      "provider": "experimental-5",
+      "model": "experimental-5",
+      "baseUrl": null,
+      "apiKey": null,
+      "clientType": null,
+      "systemPrompt": "You are a helpful assistant. Your role is to help users with their tasks. Always be friendly and professional. You can use `end_call` tool after you say goodbye to customer to hang up if call about to finish.",
+      "firstMessage": "Hello, this is the digital assistant of Freya Bank. Am I speaking with {{title}} {{last_name}}?",
+      "firstMessageMode": "assistant-speaks-first",
+      "disableInterruptionsDuringFirstMessage": true,
+      "maxTokens": 1000,
+      "temperature": 0.7,
+      "tools": [
+        {
+          "type": "function",
+          "function": {
+            "name": "end_call",
+            "handler": "__function__:end_call",
+            "description": "This is used to technically terminate the call after all the customer's questions have been answered and necessary information has been provided.\n- It should only be triggered SILENTLY in the background after the customer-related workflow is complete; never mention this tool or its name to the customer.",
+            "parameters": {
+              "type": "object",
+              "properties": {}
+            }
+          }
+        }
+      ],
+      "additionalSettings": {}
+    },
+    "ttsConfig": {
+      "provider": "Freya",
+      "model": "freya-tts",
+      "voiceId": "leyla",
+      "language": "tr",
+      "baseUrl": null,
+      "apiKey": null,
+      "additionalSettings": {
+        "speed": 1,
+        "stability": 0.5,
+        "similarity_boost": 0.75
+      },
+      "startSpeakingPlan": {
+        "waitSeconds": 0.5,
+        "backgroundNoisePhrases": [
+          "arka plan sesi",
+          "klavye sesi",
+          "klavye sesleri",
+          "öksürük",
+          "öksürük sesi",
+          "video sesi",
+          "video kaydı",
+          "çılgın ses",
+          "çılgın kahkaha",
+          "gülüş",
+          "ses ses ses",
+          "çık çık çık",
+          "sim",
+          "sim izle"
+        ]
+      },
+      "stopSpeakingPlan": {
+        "numberOfWords": 2,
+        "voiceSeconds": 0.1,
+        "backOffSeconds": 0.4,
+        "acknowledgementPhrases": [
+          "hı",
+          "evet",
+          "tamam",
+          "aynen",
+          "okey",
+          "okay",
+          "anladım",
+          "hee",
+          "ee",
+          "eee",
+          "ıı",
+          "ııı",
+          "ha",
+          "hı-hı",
+          "ha-ha",
+          "tabi",
+          "tabii",
+          "peki",
+          "tamamdır",
+          "hı hı",
+          "hım",
+          "hımm",
+          "hıhı",
+          "haha",
+          "he",
+          "hahaha"
+        ],
+        "interruptionPhrases": [
+          "dur",
+          "bekle",
+          "bir dakika",
+          "bir saniye",
+          "dursana",
+          "bekle bi",
+          "anlamadım",
+          "ne diyon",
+          "ne diyorsun",
+          "ne dedin",
+          "yeter"
+        ]
+      },
+      "textSubstitutions": [
+        {
+          "pattern": "@",
+          "replacement": "at"
+        },
+        {
+          "pattern": "\\$",
+          "replacement": "dollars"
+        },
+        {
+          "pattern": "%",
+          "replacement": "percent"
+        },
+        {
+          "pattern": "&",
+          "replacement": "and"
+        },
+        {
+          "pattern": "\\+",
+          "replacement": "plus"
+        },
+        {
+          "pattern": "turkishairlines",
+          "replacement": "turkish airlines",
+          "caseInsensitive": true
+        }
+      ],
+      "speechNormalization": {
+        "emails": true,
+        "urls": true,
+        "emojis": true,
+        "phoneNumbers": false,
+        "identityNumbers": false,
+        "generalNumbers": false,
+        "names": false
+      }
+    },
+    "sttConfig": {
+      "provider": "Freya",
+      "model": "freya-stt",
+      "language": "tr",
+      "baseUrl": null,
+      "apiKey": null,
+      "additionalSettings": {
+        "diarize": false,
+        "punctuate": true,
+        "streaming": true,
+        "aicEnabled": false,
+        "krispEnabled": false,
+        "smartTurnEnabled": true
+      },
+      "confidenceReask": {
+        "enabled": false,
+        "threshold": 0.3,
+        "reduction": "min",
+        "disableOnDigitNodes": true,
+        "reaskMode": "phrase",
+        "reaskPhrases": null,
+        "maxConsecutiveReasks": 2
+      }
+    },
+    "complianceConfig": {
+      "pciDss": false,
+      "mifidIi": false,
+      "euAiAct": false,
+      "soc2": false
+    },
+    "callTimeoutSettings": {
+      "silenceTimeout": 10,
+      "maximumDuration": 600,
+      "checkInMessage": null,
+      "closureMessage": null,
+      "maxRetries": 2,
+      "silenceTimeoutPrompt": null,
+      "maxDurationEndCall": {
+        "messageMode": "llm",
+        "spokenMessage": null,
+        "llmPrompt": null,
+        "interruptible": false,
+        "triggerTimeout": null
+      },
+      "dynamicWait": null
+    },
+    "voicemailDetection": {
+      "enabled": false,
+      "messageMode": "none",
+      "staticMessage": null,
+      "voicemailResponseDelay": 2
+    },
+    "dtmfConfig": {
+      "enabled": false,
+      "timeout": 2,
+      "terminationDigit": "#",
+      "prefix": "DTMF: "
+    },
+    "postConversationAnalysis": {
+      "summaryPrompt": null,
+      "autoDetectProblems": false,
+      "problemDetectionPrompt": null,
+      "problemDetectionInstructions": null,
+      "analysisModel": null
+    },
+    "privacyConfig": {
+      "enableRecording": true,
+      "getRecordingConsent": false,
+      "recordingConsentText": null
+    },
+    "piiRedactionConfig": {
+      "enabled": false,
+      "maskEmail": true,
+      "maskPhone": true,
+      "maskPaymentCard": true,
+      "maskNationalId": true,
+      "maskIban": true,
+      "customRules": []
+    },
+    "routingLlmConfig": null,
+    "extractionLlmConfig": null,
+    "backgroundSoundUrl": null,
+    "backgroundSoundVolume": null,
+    "syncSource": null
+  }
+}
