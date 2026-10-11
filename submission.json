@@ -7,7 +7,7 @@
     }
   ],
   "repo": "https://github.com/emredermann/freya-agent-builder.git",
-  "commit": "db3d902d2198942deda23511c14d100c5a54fe01",
+  "commit": "ddfdcb986544502160375b2fa90e91539ea2865f",
   "run_command": "python3 build.py final_case https://freya-bank-mock.freyavoice.workers.dev",
   "workflow": "submission/final.workflow.json",
   "trace": "traces/final.log",

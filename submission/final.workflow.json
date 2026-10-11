@@ -1,7 +1,7 @@
 {
  "workflow_id": "56713f2d-0993-4927-afe7-2b1f872f04d7",
  "agent_id": "2bfd3773-5ead-443e-aa05-807cd7411691",
- "updated_at": "2026-10-11T18:04:04.583Z",
+ "updated_at": "2026-10-11T18:05:29.410Z",
  "workflow": {
   "nodes": {
    "statement_assistant": {
