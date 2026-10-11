@@ -9,7 +9,7 @@ URL = os.environ.get("FREYA_API_URL", "https://staging-app.freyavoice.ai")
 # Cloudflare rejects requests without a browser-like User-Agent (error 1010).
 HEADERS = {"Authorization": "Bearer " + os.environ.get("FREYA_API_KEY", ""), "Content-Type": "application/json", "User-Agent": "Mozilla/5.0 (build-the-builder)"}
 
-def api(method, path, body=None, max_retries=5, **params):
+def api(method, path, body=None, max_retries=6, **params):
     """Call the API with automatic retry on transient server errors (502, 503, 504, 429)."""
     q = "?" + urllib.parse.urlencode(params) if params else ""
     req_data = json.dumps(body).encode() if body is not None else None
@@ -21,23 +21,27 @@ def api(method, path, body=None, max_retries=5, **params):
             return out.get("data", {}).get("result", out) if isinstance(out, dict) else out
         except urllib.error.HTTPError as e:
             err_msg = e.read().decode()[:1500]
-            if (e.code in (429, 502, 503, 504) or "temporarily unavailable" in err_msg) and attempt < max_retries - 1:
-                time.sleep(3 * (attempt + 1))
+            if (e.code in (429, 502, 503, 504) or "temporarily unavailable" in err_msg or "gateway time-out" in err_msg.lower()) and attempt < max_retries - 1:
+                wait_time = 5 * (attempt + 1)
+                print(f"Transient HTTP {e.code} error on {path}, retrying in {wait_time}s (attempt {attempt + 1}/{max_retries})...", flush=True)
+                time.sleep(wait_time)
                 continue
             raise RuntimeError(f"{method} {path} -> {e.code}: {err_msg}") from None
-        except (urllib.error.URLError, TimeoutError):
+        except (urllib.error.URLError, TimeoutError) as e:
             if attempt < max_retries - 1:
-                time.sleep(3 * (attempt + 1))
+                wait_time = 5 * (attempt + 1)
+                print(f"Network timeout/error on {path}, retrying in {wait_time}s (attempt {attempt + 1}/{max_retries})...", flush=True)
+                time.sleep(wait_time)
                 continue
             raise
 
-_ws = None
+_ws = os.environ.get("FREYA_WORKSPACE_ID")
 def workspace_id():
     """The workspace your key belongs to. List routes need it as a query parameter."""
     global _ws
     if not _ws:
         r = api("GET", "/api/v2/workspaces"); items = r.get("workspaces") or r.get("items") or r
-        _ws = os.environ.get("FREYA_WORKSPACE_ID") or items[0]["id"]
+        _ws = items[0]["id"]
     return _ws
 
 def create_workflow(name, workflow):
@@ -124,3 +128,26 @@ def run_simulation(agent_id, name, variables_by_persona, max_seconds=420, concur
             break
     its = api("GET", f"/api/v2/simulations/{sim_id}/iterations"); its = its.get("iterations") or its.get("items") or its
     return sim_id, its[0]["id"], s.get("status")
+
+def cancel_simulation(sim_id):
+    """Cancel a running or stuck simulation on Freya platform."""
+    try:
+        return api("POST", f"/api/v2/simulations/{sim_id}/cancel")
+    except Exception as e:
+        return {"error": str(e)}
+
+def cancel_running_simulations():
+    """Find and cancel any simulation currently stuck in running state."""
+    cancelled = []
+    try:
+        sims = api("GET", "/api/v2/simulations", workspaceId=workspace_id(), limit=10)
+        items = sims.get("simulations") or sims.get("items") or sims
+        for s in items:
+            if s.get("status") in ("running", "queued"):
+                sim_id = s.get("id")
+                print(f"Cancelling stuck simulation: {sim_id} ({s.get('name')})", flush=True)
+                cancel_simulation(sim_id)
+                cancelled.append(sim_id)
+    except Exception as e:
+        print(f"Warning checking running simulations: {e}", flush=True)
+    return cancelled

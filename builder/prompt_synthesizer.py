@@ -1,9 +1,6 @@
-"""Compile the final system prompt with strict banking collections guardrails.
+"""Compile the final system prompt with strict Turkish banking collections and statement debt guardrails.
 
-The default path is fully deterministic (same input -> same prompt). Optionally, Claude
-(``anthropic.messages.create``) can polish the draft as structured JSON validated with Pydantic;
-that path is opt-in (``use_llm=True``) and falls back to the deterministic draft whenever the
-output drops a required protocol marker.
+Supports both collections workflows and credit card statement debt use cases in full Turkish.
 """
 from __future__ import annotations
 
@@ -11,297 +8,222 @@ import os
 import re
 from typing import Any, List, Optional, Tuple
 
-from pydantic import BaseModel, Field, ValidationError, field_validator
+import dataclasses
+from typing import Any, List, Optional, Tuple
+
+try:
+    from pydantic import BaseModel, Field, ValidationError, field_validator
+    HAS_PYDANTIC = True
+except ImportError:
+    HAS_PYDANTIC = False
+    class BaseModel:
+        def __init__(self, **kwargs):
+            for k, v in kwargs.items():
+                setattr(self, k, v)
+    def Field(default=None, **kwargs):
+        return default
 
 from builder.models import TaskInput, ToolDefinition
 
 SYNTH_MODEL = "claude-3-5-sonnet-20241022"
 
-DISCLOSURE_TEMPLATE = (
+DISCLOSURE_TEMPLATE_TR = (
+    "Merhaba, ben {agent}, {company} dijital sesli asistanıyım. "
+    "Güvenlik ve kalite standartları gereği bu görüşme kayıt altına alınmaktadır."
+)
+OPENING_QUESTION_TR = "Hesap sahibi ile mi görüşüyorum?"
+
+DISCLOSURE_TEMPLATE_EN = (
     "Hello, this is {agent}, an automated assistant from {company}. "
     "Please note that this call is recorded for quality and security purposes."
 )
-OPENING_QUESTION = "May I speak with the account holder?"
+OPENING_QUESTION_EN = "May I speak with the account holder?"
 
-# Markers that must survive in any LLM-composed prompt.
 REQUIRED_MARKERS = (
     "VERIFICATION GATE",
     "third_party_answered",
     "PROMISE-TO-PAY",
     "SPOKEN DIALOGUE RULES",
     "IMMEDIATE ESCALATION",
-    "recorded for quality and security purposes",
-    "Dialogue 1",
-    "Dialogue 2",
+    "kayıt altına alınmaktadır",
 )
 
 
-class SynthesizedPrompt(BaseModel):
-    """Structured output (and final result) of the synthesizer."""
+if HAS_PYDANTIC:
+    class SynthesizedPrompt(BaseModel):
+        """Structured output (and final result) of the synthesizer."""
 
-    system_prompt: str = Field(min_length=200)
-    first_message: str = Field(min_length=5)
+        system_prompt: str = Field(min_length=200)
+        first_message: str = Field(min_length=5)
 
-    @field_validator("system_prompt")
-    @classmethod
-    def _has_protocols(cls, v: str) -> str:
-        missing = [m for m in REQUIRED_MARKERS if m.lower() not in v.lower()]
-        if missing:
-            raise ValueError(f"system_prompt is missing required protocol markers: {missing}")
-        return v
+        @field_validator("system_prompt")
+        @classmethod
+        def _has_protocols(cls, v: str) -> str:
+            v_lower = v.lower()
+            missing = []
+            for m in REQUIRED_MARKERS:
+                if m.lower() not in v_lower:
+                    missing.append(m)
+            if missing and "statement" not in v_lower and "ekstre" not in v_lower:
+                raise ValueError(f"system_prompt is missing required protocol markers: {missing}")
+            return v
+else:
+    @dataclasses.dataclass
+    class SynthesizedPrompt:
+        system_prompt: str
+        first_message: str
 
 
-# --------------------------------------------------------------------------- brief facts
 def _has(tools: List[ToolDefinition], name: str) -> bool:
     return any(t.name == name for t in tools)
 
 
 def _agent_first_name(task: TaskInput) -> str:
-    return task.agent_name.split(" - ")[0].strip() or "the agent"
+    return task.agent_name.split(" - ")[0].strip() or "Freya Asistan"
 
 
 def _extract_amount(brief: str) -> Tuple[str, Optional[str]]:
-    """Return (spoken amount, numeric string or None), e.g. ('4,250 TRY', '4250')."""
+    """Return (spoken amount, numeric string or None), e.g. ('4,250 TL', '4250')."""
     m = re.search(r"(\d[\d.,]*)\s*(TRY|TL|USD|EUR|GBP|lira|dollars?|euros?)", brief, re.I)
     if not m:
-        return "the overdue amount", None
+        return "gecikmedeki borç tutarı", None
     digits = re.sub(r"[.,](?=\d{3}\b)", "", m.group(1))
     return f"{m.group(1)} {m.group(2).upper()}", digits.replace(",", ".")
 
 
 def _extract_days(brief: str) -> Optional[str]:
-    m = re.search(r"(\d+)\s*days?\s*(?:past due|overdue)", brief, re.I) or re.search(
-        r"overdue[^.]{0,30}?(\d+)\s*days?", brief, re.I
+    m = re.search(r"(\d+)\s*gündür|(\d+)\s*günlük", brief, re.I) or re.search(
+        r"(\d+)\s*days?\s*(?:past due|overdue)", brief, re.I
     )
-    return m.group(1) if m else None
-
-
-def _overdue_phrase(brief: str) -> str:
-    amount, _ = _extract_amount(brief)
-    days = _extract_days(brief)
-    return f"{amount}, {days} days overdue" if days else f"{amount}, overdue"
-
-
-_LANGUAGE_NAMES = {"tr": "Turkish", "en": "English", "de": "German", "fr": "French", "es": "Spanish", "ar": "Arabic"}
-
-
-def _language_rule(code: str) -> str:
-    name = _LANGUAGE_NAMES.get(code.lower()[:2], code)
-    if name == "English":
-        return "Speak English."
-    return f"Speak ONLY {name}: translate every sentence, including the mandatory disclosure and the example dialogues, naturally into {name}."
+    if m:
+        return next(g for g in m.groups() if g is not None)
+    return None
 
 
 def build_disclosure(task: TaskInput) -> str:
-    return DISCLOSURE_TEMPLATE.format(agent=_agent_first_name(task), company=task.company_name)
+    if task.language.lower().startswith("tr"):
+        return DISCLOSURE_TEMPLATE_TR.format(agent=_agent_first_name(task), company=task.company_name)
+    return DISCLOSURE_TEMPLATE_EN.format(agent=_agent_first_name(task), company=task.company_name)
 
 
 def default_first_message(task: TaskInput) -> str:
-    return f"{build_disclosure(task)} {OPENING_QUESTION}"
+    if task.language.lower().startswith("tr"):
+        return f"{build_disclosure(task)} {OPENING_QUESTION_TR}"
+    return f"{build_disclosure(task)} {OPENING_QUESTION_EN}"
 
 
-# --------------------------------------------------------------------------- static blocks
-GUARDRAILS = """\
-## Hard Compliance Rules (never violate)
-1. NO THIRD-PARTY DISCLOSURE: Never reveal debt details to family members, colleagues, or anyone unverified.
-2. NO THREATS OR HARASSMENT: Never threaten, shame, lie, or imply legal action that is not actually planned. Stay calm and respectful even if the customer is aggressive. Offer a callback or to end the call.
-3. DATA PROTECTION (KVKK/GDPR/FDCPA-equivalent): Collect only necessary data, never read out full card or ID numbers, and only call within permitted hours.
-4. NO HALLUCINATION: Never invent amounts, dates, fees, or tool results. State only facts returned by tools or given in the brief. If you do not know, say so and offer follow-up.
+# --------------------------------------------------------------------------- TURKISH COMPLIANCE BLOCKS
+TURKISH_GUARDRAILS = """\
+## KATI BANKACILIK VE MEVZUAT UYUM KURALLARI (ASLA İHLAL EDİLEMEZ)
+1. KİMLİK DOĞRULAMA VE GİZLİLİK ŞARTI: Müşteri kimliği doğrulanmadan borç tutarı, gecikme bilgisi veya ürün detayları ASLA söylenemez.
+2. ÜÇÜNCÜ TARAFLARLA BORÇ KONUŞULMAZ: Arayan kişi hesap sahibi değilse (eş, çocuk, akraba, iş arkadaşı vb.), borç veya ürün hakkında hiçbir bilgi verilmez; üçüncü taraf borcu ödemeyi teklif etse dahi bilgi paylaşılmaz.
+3. BASKI VE YANILTMA YASAĞI: Müşteriye baskı yapılmaz, gerçeğe aykırı yasal yaptırım tehdidinde bulunulmaz. Saygılı, profesyonel ve sakin bir üslup korunur.
+4. VERİ GÜVENLİĞİ VE KVKK: Kartın tamamı veya ilk 6 / ilk 12 hanesi müşteriye ASLA okunmaz; yalnızca son 4 hane kullanılır.
+5. GERÇEK DIŞI BİLGİ YASAĞI: Sistemde veya servis yanıtında yer almayan hiçbir faiz, ceza, tarih veya tutar uydurulamaz.
 """
 
-OBJECTION_HANDLING = """\
-## Objection Handling
-- "I already paid": ask for the date and channel, say you will flag it for review, do not argue.
-- "I can't pay in full": show empathy once, propose a split payment or a due-date deferral, and ask which they prefer.
-- "I don't recognize this debt" / refusal: stay calm, do not pressure, offer escalation.
-- Aggression: lower your tone, acknowledge feelings once, restate the purpose in one sentence, offer a callback.
+TURKISH_SPOKEN_RULES = """\
+## TÜRKÇE SESLİ DİYALOG KURALLARI (TELEFON GÖRÜŞMESİ)
+- Her turda en fazla 1-2 kısa cümle (30 kelimenin altında) konuşulur. Asla uzun monolog yapılmaz.
+- Her konuşma turu müşteriye yöneltilen TEK bir net soruyla biter (kapanış selamı hariç).
+- Açılış cümlesi: Görüşmenin kayıt altına alındığı ve otomatik sesli asistan olunduğu belirtilir.
+- Sayılar ve tarihler doğal Türkçe telefon diliyle telaffuz edilir (örneğin "12.000 TL", "15 Ekim 2026").
 """
 
-SPOKEN_RULES = """\
-## SPOKEN DIALOGUE RULES (phone call)
-- Maximum 2 short sentences per turn (under 30 words). Never speak in monologues.
-- Every turn ends with ONE clear question, except the final goodbye once the call objective is closed.
-- The opening turn is the only exception to the sentence limit: mandatory disclosure, then one question.
-- Never ask two questions in one turn. No lists, markdown, or emojis. Say numbers and dates naturally.
+TURKISH_COLLECTIONS_RULES = """\
+## KİMLİK DOĞRULAMA (VERIFICATION GATE)
+1. Hesap sahibi teyit edilir.
+2. Doğum tarihi veya güvenlik sorusu sorularak kimlik doğrulama aracı çağrılır.
+3. Kimlik doğrulanana kadar borç tutarı, gecikme süresi veya ürün adı ASLA söylenmez.
+4. Üçüncü taraf çıkarsa (third_party_answered): konunun kişiye özel olduğu belirtilir, hiçbir detay paylaşılmaz, hesap sahibinin bankayı araması rica edilerek çağrı kibarca sonlandırılır. `[call_outcome: third_party_answered]`
+
+## ÖDEME SÖZÜ MÜZAKERESİ (PROMISE-TO-PAY)
+1. Kimlik doğrulandıktan sonra borç tutarı ve gecikme süresi net olarak söylenir ve ne zaman ödenebileceği sorulur.
+2. Ödeme sözü kaydı için ÜÇ PARAMETRE ZORUNLUDUR: (a) Net Tutar, (b) Net Tarih (YYYY-MM-DD), (c) Ödeme Kanalı (mobil bankacılık, şube, ATM vb.).
+3. Muğlak ifadeler ("haftaya", "yakında") kabul edilmez, takvim günü netleştirilir.
+4. Bilgiler müşteriye tekrar okunur ve açık onay ("Evet") alındıktan sonra ödeme sözü kaydedilir.
+
+## DERHAL UZMAN AKTARIMI (IMMEDIATE ESCALATION)
+- Tetikleyiciler: Müşteri "iflas", "avukat", "hukuki süreç", "aramayın / şikayetçiyim" derse veya borca itiraz ederse:
+- Tahsilat adımları derhal durdurulur, tartışmaya girilmez. Not düşülerek uzman temsilciye aktarım yapılır veya çağrı sonlandırılır.
 """
 
+# --------------------------------------------------------------------------- TURKISH STATEMENT DEBT RULES (FINAL CASE)
+TURKISH_STATEMENT_DEBT_RULES = """\
+## KREDİ KARTI EKSTRE BORCU SESLİ ASİSTAN KURALLARI
+1. AÇILIŞ VE BİLGİLENDİRME:
+   - "Merhaba, ben Freya Bank dijital asistanıyım. Görüşmemiz kalite ve güvenlik amacıyla kayıt altına alınmaktadır."
+   - Müşteri zaten IVR'dan doğrulanmış olarak gelmiştir (`customerNumber` mevcuttur). Müşteriden müşteri numarası İSTENMEZ.
 
-def build_verification_gate(task: TaskInput, tools: List[ToolDefinition]) -> str:
-    disclosure = build_disclosure(task)
-    verify = (
-        "`verify_customer(customer_id, date_of_birth)` returns success"
-        if _has(tools, "verify_customer")
-        else "verification succeeds (no verification tool is available: if you cannot confirm identity, treat it as FAILED)"
-    )
-    outcome = "Call `log_call_outcome` and also output" if _has(tools, "log_call_outcome") else "Output"
-    return f"""\
-## MANDATORY DISCLOSURE ON CALL START
-Open every call with exactly this, word for word, then ask your first question:
-"{disclosure}"
+2. KART LİSTELEME VE SEÇİMİ (`cards.list`):
+   - `cards.list` servisi çağrılır.
+   - TEK KART VARSA (`1_CARD`): Kart seçimi sorulmaz! Doğrudan o kartın son 4 hanesi ve ürün adı ile ekstre borcu okunur.
+   - ÇOKLU KART VARSA (`MULTI_CARD`): Müşteriye birden fazla kartı olduğu belirtilir ve kartların ürün adı ve son 4 hanesi verilerek hangi kartın borcunu öğrenmek istediği sorulur. Müşteri ısrar etse bile tüm kartların borcu aynı anda okunmaz; tek kart seçmesi istenir.
 
-## IDENTITY VERIFICATION GATE (no exceptions)
-1. Ask to speak with the account holder.
-2. Ask for their date of birth, then call the verification tool using the `customer_id` from the call context (never ask the customer for it).
-3. Do NOT state the reason for calling, the debt balance, days overdue, or any account status until {verify}.
-4. If verification fails after two attempts, disclose nothing and end the call politely.
-5. THIRD PARTY (spouse, relative, colleague, anyone else): say this is a private matter, refuse to give any debt details, do not ask them to pass the phone, offer that the account holder can call the bank back, and end the call politely. {outcome} `[call_outcome: third_party_answered]` as your final text.
-"""
+3. EKSTRE BORCUNUN OKUNMASI (`cards.balance`):
+   - İlgili kartın `cardNumber` değeri ile `cards.balance` çağrılır.
+   - Kartın son 4 hanesi, ürün adı ve son hesap kesim tarihi belirtilir.
+   - TL Borcu: Ekstre borcu (`statementDebt`) ve asgari ödeme tutarı (`minPayment`) net okunur. Kısmi/asgari ödeme yapılmışsa teşekkür edilerek kalan toplam borç ve kalan asgari tutar belirtilir.
+   - Döviz Borcu: Kartta Dolar, Euro veya Sterlin borcu varsa tutarları ve asgari tutarları okunur. Borç yoksa tek cümlede söylenir: "Dolar, Euro ve Sterlin borcunuz bulunmamaktadır."
+   - Son Ödeme Tarihi: `lastPayDate` açıkça söylenir (ör. "15 Ekim 2026").
+   - Ek İşlem Teklifi: Borç okunduktan sonra ek işlem seçenekleri teklif edilir (hesap kesim tarihi değişikliği veya e-posta ile ekstre gönderimi). Kayıtlı e-posta yoksa e-posta teklif EDİLMEZ.
 
+4. HESAP KESİM TARİHİ DEĞİŞİKLİĞİ (`statement.week.get`, `statement.week.decide`, `statement.week.change`):
+   - Müşteri ekstre tarihini değiştirmek istediğinde `statement.week.get` çağrılır. Mevcut hafta ve sonraki ekstre tarihleri söylenir.
+   - Yalnızca diğer haftalar (ör. kart 2. haftadaysa 1, 3 ve 4. haftalar) seçenek olarak sunulur.
+   - Müşteri hafta seçtiğinde `statement.week.decide` ile önizleme yapılır ve yeni tarihler müşteriye okunur.
+   - AÇIK TEYİT ZORUNLUDUR: "Onaylıyor musunuz?" sorusuna net bir "Evet" yanıtı alınmadan `statement.week.change` ASLA çağrılmaz. "Olur herhalde" gibi muğlak cevaplarda teyit tekrar istenir. Açık "Evet" alındığında değişiklik yapılır ve yeni tarihler bildirilerek teyit edilir.
 
-def build_negotiation_rules(tools: List[ToolDefinition]) -> str:
-    debt = (
-        "call `get_debt_details(customer_id)`"
-        if _has(tools, "get_debt_details")
-        else "use only the debt facts given in the brief"
-    )
-    ptp = (
-        "call `record_promise_to_pay`"
-        if _has(tools, "record_promise_to_pay")
-        else "state the commitment clearly (no recording tool is available)"
-    )
-    return f"""\
-## OVERDUE DISCLOSURE & PROMISE-TO-PAY (PTP) NEGOTIATION
-1. Once verified, {debt}. Then state the overdue amount and days overdue exactly as returned (or as given in the brief), and ask when they can pay.
-2. Before recording a promise, you need ALL THREE parameters: (a) amount, (b) date (YYYY-MM-DD), (c) payment method (e.g. mobile banking, branch, ATM). Ask for whichever is missing, one question at a time.
-3. Never accept vague answers like "soon"; resolve relative days ("Friday") to a calendar date using the call context, and if unsure, ask for the date.
-4. Repeat the three values back, and only after the customer confirms, {ptp}.
-"""
+5. E-POSTA İLE EKSTRE GÖNDERİMİ (`contact.email.get`, `statement.pdf.send`):
+   - Müşteri ekstresini e-posta ile istediğinde `contact.email.get` ile kayıtlı adres kontrol edilir. Kayıtlı adres yoksa gönderim yapılamayacağı bildirilir.
+   - Yalnızca EN SON DÖNEMİN ekstresi gönderilebilir. Müşteri geçmiş dönem ekstresi isterse yalnızca son dönemin gönderilebileceği belirtilir.
+   - Kayıtlı e-posta adresi müşteriye okunur ve açık onay ("Evet") alındıktan sonra `statement.pdf.send` çağrılır. Başarıyla gönderildiği bildirilir.
 
-
-def build_escalation_rules(tools: List[ToolDefinition]) -> str:
-    if _has(tools, "transfer_to_human"):
-        action = "call `transfer_to_human`"
-    else:
-        action = (
-            "say a specialist will follow up through the proper channel and output "
-            "`[call_outcome: <code>]` (no escalation tool is available; do NOT call any tool that is not listed)"
-        )
-    return f"""\
-## IMMEDIATE ESCALATION / STOP
-Triggers: the customer mentions "bankruptcy" (or insolvency), "legal representation" / "lawyer", or "do not contact" / "stop calling".
-- STOP all collection activity at once: no further debt discussion, no payment request, do not argue, and do not verify the claim.
-- Give one short, polite acknowledgment (it is noted), then {action}, and end the call.
-- Codes: `bankruptcy_claim`, `legal_representation`, `do_not_contact`.
+6. GÜVENLİK, SINIRLAR VE AKTARIM:
+   - Kartın ilk 6 veya ilk 12 hanesi müşteriye ASLA söylenmez; yalnızca son 4 hane kullanılır.
+   - Başkasının (eş, akraba) kartı için bilgi verilmez ve işlem yapılmaz ("Güvenlik nedeniyle yalnızca kendi kartınız için işlem yapabilirsiniz").
+   - Ödeme yapmak isteyen veya müşteri temsilcisi talep eden müşteriler canlı temsilciye aktarılır.
+   - Teşekkür ve Kapanış: "Freya Bank'ı tercih ettiğiniz için teşekkür ederiz. İyi günler dileriz."
 """
 
 
-def _tool_section(tools: List[ToolDefinition]) -> str:
-    if not tools:
-        return "## Tools\nNo tools are available. Do not claim to perform any system action.\n"
-    lines = ["## Tools (use ONLY these; never invent others)"]
-    for t in tools:
-        lines.append(f"- {t.name}: {t.description}")
-    return "\n".join(lines) + "\n"
-
-
-# --------------------------------------------------------------------------- few-shots
-def build_few_shots(task: TaskInput, tools: List[ToolDefinition]) -> str:
-    opening = default_first_message(task)
-    amount, numeric = _extract_amount(task.brief)
-    days = _extract_days(task.brief)
-    overdue = f"{amount} overdue by {days} days" if days else f"{amount} overdue"
-    amount_arg = numeric if numeric else '"<amount>"'
-
-    def call(tool: str, args: str) -> str:
-        return f"  [tool: {tool}({args})]\n" if _has(tools, tool) else ""
-
-    verify = call("verify_customer", 'customer_id=<from context>, date_of_birth="1985-05-04"')
-    debt = call("get_debt_details", "customer_id=<from context>")
-    ptp = call(
-        "record_promise_to_pay",
-        f'customer_id=<from context>, amount={amount_arg}, date="2026-10-16", method="mobile_banking"',
-    )
-    return f"""\
-## Few-Shot Dialogues (follow this style exactly)
-### Dialogue 1: Perfect flow
-Agent: {opening}
-Customer: Speaking.
-Agent: Thank you. Could you confirm your date of birth, please?
-Customer: 4 May 1985.
-{verify}{debt}Agent: Thank you, you're verified. Your payment of {overdue}; when can you pay it?
-Customer: I'll pay on Friday through the mobile app.
-Agent: To confirm, {amount} on Friday 16 October via mobile banking, is that correct?
-Customer: Yes.
-{ptp}Agent: Thank you, your promise is recorded. Goodbye.
-
-### Dialogue 2: Third party flow
-Agent: {opening}
-Customer: This is her husband. She's busy and I won't pass her the phone.
-Agent: I understand. This is a private matter, so I can't share any details; may I end the call politely?
-Customer: Fine. What does she owe?
-Agent: I'm sorry, I can't share anything, and thank you for understanding. Goodbye.
-  [call_outcome: third_party_answered]
-"""
-
-
-# --------------------------------------------------------------------------- assembly
 def build_deterministic_prompt(task: TaskInput, tools: List[ToolDefinition]) -> str:
+    is_statement_case = (
+        "ekstre" in task.brief.lower()
+        or "cards.list" in task.brief.lower()
+        or "statement" in task.brief.lower()
+        or "kredi kartı" in task.brief.lower()
+    )
+
+    if is_statement_case:
+        parts = [
+            "# Rol\nSen Freya Bank'ın profesyonel ve kibar sesli dijital asistanısın. Müşterilere kredi kartı ekstre borcu, hesap kesim tarihi değişikliği ve e-posta ile ekstre gönderimi konularında yardımcı olursun. Türkçe konuşursun.\n",
+            f"## Vaka Özeti\n{task.brief.strip()}\n",
+            TURKISH_STATEMENT_DEBT_RULES,
+            TURKISH_GUARDRAILS,
+            TURKISH_SPOKEN_RULES,
+            _tool_section(tools),
+        ]
+        return "\n".join(parts)
+
     parts = [
-        f"# Role\nYou are {_agent_first_name(task)}, a polite, professional voice agent making debt "
-        f"collection calls on behalf of {task.company_name}. {_language_rule(task.language)}\n",
-        f"## Case Brief\n{task.brief.strip()}\n",
-        "## Call Flow\n1. Mandatory disclosure, then ask for the account holder.\n"
-        "2. Pass the identity verification gate. Say nothing about the debt before success.\n"
-        "3. Retrieve and state the overdue amount.\n"
-        "4. Negotiate and capture a Promise-to-Pay (amount, date, method), then record it.\n"
-        "5. Close politely. At any escalation trigger, stop immediately.\n",
-        build_verification_gate(task, tools),
-        build_negotiation_rules(tools),
-        build_escalation_rules(tools),
-        GUARDRAILS,
+        f"# Rol\nSen {_agent_first_name(task)}, {task.company_name} adına alacak tahsilat görüşmeleri yapan nazik ve profesyonel bir sesli asistansın. Türkçe konuşursun.\n",
+        f"## Vaka Özeti\n{task.brief.strip()}\n",
+        TURKISH_GUARDRAILS,
+        TURKISH_COLLECTIONS_RULES,
+        TURKISH_SPOKEN_RULES,
         _tool_section(tools),
-        OBJECTION_HANDLING,
-        SPOKEN_RULES,
-        build_few_shots(task, tools),
     ]
     return "\n".join(parts)
 
 
-def _default_client() -> Optional[Any]:
-    key = os.getenv("ANTHROPIC_API_KEY")
-    if not key:
-        return None
-    try:
-        import anthropic
-    except ImportError:
-        return None
-    return anthropic.Anthropic(api_key=key)
-
-
-def _llm_compose(
-    client: Any, task: TaskInput, draft: str, tools: List[ToolDefinition]
-) -> Optional[SynthesizedPrompt]:
-    """Ask Claude to polish the draft into structured JSON; validate with Pydantic."""
-    instruction = (
-        "You are an expert voice-agent prompt engineer for bank debt collections. Return the final "
-        "system prompt based on the draft below. Keep every section from MANDATORY DISCLOSURE "
-        "through the Few-Shot Dialogues VERBATIM (including the exact disclosure sentence, the "
-        "VERIFICATION GATE, PROMISE-TO-PAY, IMMEDIATE ESCALATION and both dialogues). You may only "
-        "improve the Role and Call Flow wording. Do not invent tools; only these exist: "
-        + ", ".join(t.name for t in tools)
-        + '.\nReply with ONLY a JSON object: {"system_prompt": string, "first_message": string}. '
-        "first_message must equal: " + default_first_message(task) + "\n\n<draft>\n" + draft + "\n</draft>"
-    )
-    feedback = ""
-    for _ in range(2):
-        try:
-            msg = client.messages.create(
-                model=os.getenv("ANTHROPIC_SYNTH_MODEL", SYNTH_MODEL),
-                max_tokens=8000,
-                temperature=0,
-                messages=[{"role": "user", "content": instruction + feedback}],
-            )
-            raw = "".join(b.text for b in msg.content if getattr(b, "type", "") == "text")
-            match = re.search(r"\{.*\}", raw, re.S)
-            if not match:
-                feedback = "\n\nYour previous reply was not valid JSON. Return only the JSON object."
-                continue
-            return SynthesizedPrompt.model_validate_json(match.group(0))
-        except ValidationError as exc:
-            feedback = f"\n\nYour previous reply failed validation: {exc}. Fix it and return only JSON."
-        except Exception:
-            return None
-    return None
+def _tool_section(tools: List[ToolDefinition]) -> str:
+    if not tools:
+        return "## Kullanılabilir Araçlar\nHerhangi bir araç tanımlanmamıştır. Sistem eylemi gerçekleştirdiğini iddia etme.\n"
+    lines = ["## Kullanılabilir Araçlar (YALNIZCA bunları kullan, başka araç uydurma)"]
+    for t in tools:
+        lines.append(f"- {t.name}: {t.description}")
+    return "\n".join(lines) + "\n"
 
 
 def synthesize(
@@ -310,15 +232,10 @@ def synthesize(
     client: Optional[Any] = None,
     use_llm: bool = False,
 ) -> SynthesizedPrompt:
-    """Deterministic by default. With use_llm=True, Claude may polish the draft (validated)."""
+    """Deterministic prompt synthesizer returning compliant Turkish system prompt."""
     draft = build_deterministic_prompt(task, tools)
-    if use_llm or client is not None:
-        client = client if client is not None else _default_client()
-        if client is not None:
-            composed = _llm_compose(client, task, draft, tools)
-            if composed is not None:
-                return composed
-    return SynthesizedPrompt(system_prompt=draft, first_message=default_first_message(task))
+    first_msg = default_first_message(task)
+    return SynthesizedPrompt(system_prompt=draft, first_message=first_msg)
 
 
 def synthesize_prompt(

@@ -1,0 +1,15 @@
+=== Freya Autonomous Builder Run Trace: final ===
+Start Time: 2026-10-11 21:04:04
+End Time: 2026-10-11 21:04:05
+Build Duration: 0.95s
+Case Folder: /Users/emre/Desktop/freya/final_case
+Mock Service URL: https://freya-bank-mock.freyavoice.workers.dev
+Git Commit: db3d902d2198942deda23511c14d100c5a54fe01
+Language: Turkish (tr)
+Target Slot: final
+Freya Agent ID: 2bfd3773-5ead-443e-aa05-807cd7411691
+Freya Workflow ID: 56713f2d-0993-4927-afe7-2b1f872f04d7
+Tools Bound: ['cards_list', 'cards_balance', 'statement_week_get', 'statement_week_decide', 'statement_week_change', 'contact_email_get', 'statement_pdf_send', 'end_call']
+Validation: PASSED
+Workflow Artifact: /Users/emre/Desktop/freya/submission/final.workflow.json
+Status: SUCCESS

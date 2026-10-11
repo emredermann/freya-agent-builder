@@ -1,0 +1,806 @@
+{
+ "workflow_id": "56713f2d-0993-4927-afe7-2b1f872f04d7",
+ "agent_id": "2bfd3773-5ead-443e-aa05-807cd7411691",
+ "updated_at": "2026-10-11T18:04:04.583Z",
+ "workflow": {
+  "nodes": {
+   "statement_assistant": {
+    "name": "statement_assistant",
+    "tools": [
+     {
+      "type": "function",
+      "config": {
+       "timeoutMs": 15000,
+       "maxRetries": 0
+      },
+      "function": {
+       "name": "cards_list",
+       "handler": "__function__:api_call",
+       "parameters": {
+        "type": "object",
+        "properties": {
+         "url": {
+          "type": "string",
+          "default": "https://freya-bank-mock.freyavoice.workers.dev/voice/v1/cards.list"
+         },
+         "body": {
+          "type": "object",
+          "properties": {
+           "call": {
+            "type": "object",
+            "properties": {
+             "lang": {
+              "type": "string",
+              "default": "tr"
+             }
+            }
+           },
+           "data": {
+            "type": "object",
+            "properties": {
+             "aiFlow": {
+              "type": "string",
+              "default": "CardOps"
+             },
+             "customerNo": {
+              "type": "string",
+              "default": "{{customerNumber}}"
+             }
+            }
+           }
+          }
+         },
+         "method": {
+          "type": "string",
+          "default": "POST"
+         },
+         "headers": {
+          "type": "object",
+          "properties": {
+           "Content-Type": {
+            "type": "string",
+            "default": "application/json"
+           }
+          }
+         }
+        }
+       },
+       "description": "M\u00fc\u015fterinin ge\u00e7erli ve aktif kredi kartlar\u0131n\u0131 listeler."
+      }
+     },
+     {
+      "type": "function",
+      "config": {
+       "timeoutMs": 15000,
+       "maxRetries": 0
+      },
+      "function": {
+       "name": "cards_balance",
+       "handler": "__function__:api_call",
+       "parameters": {
+        "type": "object",
+        "properties": {
+         "url": {
+          "type": "string",
+          "default": "https://freya-bank-mock.freyavoice.workers.dev/voice/v1/cards.balance"
+         },
+         "body": {
+          "type": "object",
+          "properties": {
+           "call": {
+            "type": "object",
+            "properties": {
+             "lang": {
+              "type": "string",
+              "default": "tr"
+             }
+            }
+           },
+           "data": {
+            "type": "object",
+            "required": [
+             "cardNumber"
+            ],
+            "properties": {
+             "cardNumber": {
+              "type": "string",
+              "description": "Kart numaras\u0131 (cards.list sonucundaki maskeli numara, \u00f6r: 540000******1234)"
+             }
+            }
+           }
+          }
+         },
+         "method": {
+          "type": "string",
+          "default": "POST"
+         },
+         "headers": {
+          "type": "object",
+          "properties": {
+           "Content-Type": {
+            "type": "string",
+            "default": "application/json"
+           }
+          }
+         }
+        }
+       },
+       "description": "Kredi kart\u0131n\u0131n hesap kesim tarihi, son \u00f6deme tarihi ve para birimlerine g\u00f6re (TL, USD, EUR, GBP) ekstre borcunu ve asgari tutarlar\u0131n\u0131 getirir."
+      }
+     },
+     {
+      "type": "function",
+      "config": {
+       "timeoutMs": 15000,
+       "maxRetries": 0
+      },
+      "function": {
+       "name": "statement_week_get",
+       "handler": "__function__:api_call",
+       "parameters": {
+        "type": "object",
+        "properties": {
+         "url": {
+          "type": "string",
+          "default": "https://freya-bank-mock.freyavoice.workers.dev/voice/v1/statement.week.get"
+         },
+         "body": {
+          "type": "object",
+          "properties": {
+           "call": {
+            "type": "object",
+            "properties": {
+             "lang": {
+              "type": "string",
+              "default": "tr"
+             }
+            }
+           },
+           "data": {
+            "type": "object",
+            "required": [
+             "cardNumber"
+            ],
+            "properties": {
+             "cardNumber": {
+              "type": "string",
+              "description": "Kart numaras\u0131"
+             }
+            }
+           }
+          }
+         },
+         "method": {
+          "type": "string",
+          "default": "POST"
+         },
+         "headers": {
+          "type": "object",
+          "properties": {
+           "Content-Type": {
+            "type": "string",
+            "default": "application/json"
+           }
+          }
+         }
+        }
+       },
+       "description": "Kart\u0131n mevcut hesap kesim haftas\u0131n\u0131 ve g\u00fcn\u00fcn\u00fc, bir sonraki ekstre tarihlerini ve ortak ekstre bilgisini getirir."
+      }
+     },
+     {
+      "type": "function",
+      "config": {
+       "timeoutMs": 15000,
+       "maxRetries": 0
+      },
+      "function": {
+       "name": "statement_week_decide",
+       "handler": "__function__:api_call",
+       "parameters": {
+        "type": "object",
+        "properties": {
+         "url": {
+          "type": "string",
+          "default": "https://freya-bank-mock.freyavoice.workers.dev/voice/v1/statement.week.decide"
+         },
+         "body": {
+          "type": "object",
+          "properties": {
+           "call": {
+            "type": "object",
+            "properties": {
+             "lang": {
+              "type": "string",
+              "default": "tr"
+             }
+            }
+           },
+           "data": {
+            "type": "object",
+            "required": [
+             "cardNumber",
+             "newStatementWeek"
+            ],
+            "properties": {
+             "cardNumber": {
+              "type": "string",
+              "description": "Kart numaras\u0131"
+             },
+             "statementDay": {
+              "type": "integer",
+              "description": "Kart\u0131n mevcut hesap kesim g\u00fcn\u00fc (statement.week.get yan\u0131t\u0131ndan)"
+             },
+             "newStatementWeek": {
+              "type": "integer",
+              "description": "Talep edilen yeni hesap kesim haftas\u0131 (1, 2, 3 veya 4)"
+             }
+            }
+           }
+          }
+         },
+         "method": {
+          "type": "string",
+          "default": "POST"
+         },
+         "headers": {
+          "type": "object",
+          "properties": {
+           "Content-Type": {
+            "type": "string",
+            "default": "application/json"
+           }
+          }
+         }
+        }
+       },
+       "description": "\u0130stenen yeni hesap kesim haftas\u0131 i\u00e7in tarihleri \u00f6nizler (kart\u0131 DE\u011e\u0130\u015eT\u0130RMEZ, yaln\u0131zca \u00f6nizleme tarihlerini hesaplar)."
+      }
+     },
+     {
+      "type": "function",
+      "config": {
+       "timeoutMs": 15000,
+       "maxRetries": 0
+      },
+      "function": {
+       "name": "statement_week_change",
+       "handler": "__function__:api_call",
+       "parameters": {
+        "type": "object",
+        "properties": {
+         "url": {
+          "type": "string",
+          "default": "https://freya-bank-mock.freyavoice.workers.dev/voice/v1/statement.week.change"
+         },
+         "body": {
+          "type": "object",
+          "properties": {
+           "call": {
+            "type": "object",
+            "properties": {
+             "lang": {
+              "type": "string",
+              "default": "tr"
+             }
+            }
+           },
+           "data": {
+            "type": "object",
+            "required": [
+             "cardNumber",
+             "newStatementWeek"
+            ],
+            "properties": {
+             "cardNumber": {
+              "type": "string",
+              "description": "Kart numaras\u0131"
+             },
+             "statementDay": {
+              "type": "integer",
+              "description": "Mevcut hesap kesim g\u00fcn\u00fc"
+             },
+             "newStatementWeek": {
+              "type": "integer",
+              "description": "Yeni hesap kesim haftas\u0131 (1, 2, 3 veya 4)"
+             }
+            }
+           }
+          }
+         },
+         "method": {
+          "type": "string",
+          "default": "POST"
+         },
+         "headers": {
+          "type": "object",
+          "properties": {
+           "Content-Type": {
+            "type": "string",
+            "default": "application/json"
+           }
+          }
+         }
+        }
+       },
+       "description": "Kart\u0131n hesap kesim haftas\u0131n\u0131 de\u011fi\u015ftirir. YALNIZCA m\u00fc\u015fteri \u00f6nizleme tarihlerini a\u00e7\u0131k\u00e7a onaylad\u0131ktan ('Evet') sonra \u00e7a\u011fr\u0131l\u0131r."
+      }
+     },
+     {
+      "type": "function",
+      "config": {
+       "timeoutMs": 15000,
+       "maxRetries": 0
+      },
+      "function": {
+       "name": "contact_email_get",
+       "handler": "__function__:api_call",
+       "parameters": {
+        "type": "object",
+        "properties": {
+         "url": {
+          "type": "string",
+          "default": "https://freya-bank-mock.freyavoice.workers.dev/voice/v1/contact.email.get"
+         },
+         "body": {
+          "type": "object",
+          "properties": {
+           "call": {
+            "type": "object",
+            "properties": {
+             "lang": {
+              "type": "string",
+              "default": "tr"
+             }
+            }
+           },
+           "data": {
+            "type": "object",
+            "properties": {
+             "customerNo": {
+              "type": "string",
+              "default": "{{customerNumber}}"
+             },
+             "intAddressInfoType": {
+              "type": "string",
+              "default": "E"
+             }
+            }
+           }
+          }
+         },
+         "method": {
+          "type": "string",
+          "default": "POST"
+         },
+         "headers": {
+          "type": "object",
+          "properties": {
+           "Content-Type": {
+            "type": "string",
+            "default": "application/json"
+           }
+          }
+         }
+        }
+       },
+       "description": "M\u00fc\u015fterinin bankada kay\u0131tl\u0131 ileti\u015fim e-posta adresini sorgular."
+      }
+     },
+     {
+      "type": "function",
+      "config": {
+       "timeoutMs": 15000,
+       "maxRetries": 0
+      },
+      "function": {
+       "name": "statement_pdf_send",
+       "handler": "__function__:api_call",
+       "parameters": {
+        "type": "object",
+        "properties": {
+         "url": {
+          "type": "string",
+          "default": "https://freya-bank-mock.freyavoice.workers.dev/voice/v1/statement.pdf.send"
+         },
+         "body": {
+          "type": "object",
+          "properties": {
+           "call": {
+            "type": "object",
+            "properties": {
+             "lang": {
+              "type": "string",
+              "default": "tr"
+             }
+            }
+           },
+           "data": {
+            "type": "object",
+            "required": [
+             "cardNumber",
+             "emailAddress"
+            ],
+            "properties": {
+             "cardNumber": {
+              "type": "string",
+              "description": "Kart numaras\u0131"
+             },
+             "customerNo": {
+              "type": "string",
+              "default": "{{customerNumber}}"
+             },
+             "currencyType": {
+              "type": "string",
+              "default": "TL"
+             },
+             "emailAddress": {
+              "type": "string",
+              "description": "G\u00f6nderilecek e-posta adresi"
+             },
+             "statementDate": {
+              "type": "string",
+              "description": "Ekstre tarihi (dd.MM.yyyy)"
+             }
+            }
+           }
+          }
+         },
+         "method": {
+          "type": "string",
+          "default": "POST"
+         },
+         "headers": {
+          "type": "object",
+          "properties": {
+           "Content-Type": {
+            "type": "string",
+            "default": "application/json"
+           }
+          }
+         }
+        }
+       },
+       "description": "Son d\u00f6nemin ekstre PDF belgesini m\u00fc\u015fterinin onaylad\u0131\u011f\u0131 kay\u0131tl\u0131 e-posta adresine g\u00f6nderir."
+      }
+     },
+     {
+      "type": "function",
+      "config": {
+       "timeoutMs": 10000
+      },
+      "function": {
+       "name": "end_call",
+       "handler": "__function__:end_call",
+       "parameters": {
+        "type": "object",
+        "properties": {
+         "message_mode": {
+          "type": "string",
+          "default": "none"
+         },
+         "interruptible": {
+          "type": "boolean",
+          "default": true
+         },
+         "trigger_pattern": {
+          "type": "string",
+          "default": "\u0130yi g\u00fcnler|iyi g\u00fcnler|ho\u015f\u00e7a kal\u0131n|ho\u015f\u00e7akal\u0131n"
+         },
+         "trigger_timeout": {
+          "type": "number",
+          "default": 3
+         },
+         "trigger_pattern_both": {
+          "type": "string",
+          "default": "te\u015fekk\u00fcrler|te\u015fekk\u00fcr ederim|sa\u011folun|sa\u011fol|iyi g\u00fcnler|ho\u015f\u00e7akal|ho\u015f\u00e7a kal\u0131n|baybay"
+         }
+        }
+       },
+       "description": "G\u00f6r\u00fc\u015fmeyi sonland\u0131r\u0131r. '\u0130yi g\u00fcnler dileriz.' ifadesi \u00e7a\u011fr\u0131y\u0131 otomatik sonland\u0131r\u0131r."
+      }
+     }
+    ],
+    "on_enter": {
+     "text": "Merhaba, ben Freya Bank dijital asistan\u0131y\u0131m. G\u00fcvenlik ve kalite standartlar\u0131 gere\u011fi bu g\u00f6r\u00fc\u015fme kay\u0131t alt\u0131na al\u0131nmaktad\u0131r. Kredi kart\u0131 ekstre borcunuzla ilgili yard\u0131mc\u0131 olabilirim.",
+     "type": "tts"
+    },
+    "position": {
+     "x": 500,
+     "y": 0
+    },
+    "node_type": "conversation",
+    "assertions": [],
+    "passthrough": false,
+    "pre_actions": [],
+    "transitions": [],
+    "role_message": "",
+    "task_message": "Sen Freya Bank'\u0131n kredi kart\u0131 ekstre borcu sesli asistan\u0131s\u0131n. M\u00fc\u015fteri IVR men\u00fcs\u00fcn\u00fc ge\u00e7mi\u015f ve m\u00fc\u015fteri numaras\u0131 {{customerNumber}} olarak aktar\u0131lm\u0131\u015ft\u0131r.\n\u00c7a\u011fr\u0131 zaman\u0131: {{now}}. T\u00fcm tarih ve takvim kararlar\u0131nda {{now}} esas al\u0131n\u0131r.\nTelefon konu\u015fmas\u0131 kurallar\u0131: Her turda EN FAZLA 1-2 k\u0131sa c\u00fcmle (30 kelime alt\u0131) konu\u015f. Asla monolog yapma. Her konu\u015fman tek bir net soru veya y\u00f6nlendirmeyle bitsin.\n\n1. KART L\u0130STELEME & SE\u00c7\u0130M\u0130 (cards_list):\n   - G\u00f6r\u00fc\u015fme ba\u015f\u0131nda derhal cards_list servisini \u00e7a\u011f\u0131r.\n   - TEK KART VARSA (1_CARD): Kart se\u00e7imi sorma! Do\u011frudan o kart i\u00e7in cards_balance \u00e7a\u011f\u0131r ve borcu oku.\n   - \u00c7OKLU KART VARSA (MULTI_CARD): M\u00fc\u015fteriye birden fazla kart\u0131 oldu\u011funu s\u00f6yle, kartlar\u0131n \u00fcr\u00fcn ad\u0131 ve son 4 hanesini vererek hangisinin borcunu \u00f6\u011frenmek istedi\u011fini sor (\u00f6r. 'Y\u0131ld\u0131z Premium kart\u0131n\u0131z m\u0131, yoksa Y\u0131ld\u0131z Fly kart\u0131n\u0131z m\u0131?').\n   - M\u00fc\u015fteri t\u00fcm kartlar\u0131n borcunu ayn\u0131 anda \u00f6\u011frenmek istese dahi, t\u00fcm kartlar\u0131n borcu ayn\u0131 anda okunmaz! Tek bir kart se\u00e7mesini rica et.\n\n2. BORCUN VE TAR\u0130HLER\u0130N OKUNMASI (cards_balance):\n   - Se\u00e7ilen kart\u0131n cardNumber de\u011feriyle cards_balance \u00e7a\u011f\u0131r.\n   - Kart\u0131n son 4 hanesini, \u00fcr\u00fcn ad\u0131n\u0131 ve son hesap kesim tarihini belirt.\n   - TL BORCU: Ekstre borcunu (statementDebt) ve asgari \u00f6deme tutar\u0131n\u0131 (minPayment) oku. E\u011fer asgari veya k\u0131smi \u00f6deme yap\u0131lm\u0131\u015fsa te\u015fekk\u00fcr ederek kalan toplam bor\u00e7 ve kalan asgari tutar\u0131 belirt.\n   - D\u00d6V\u0130Z BORCU: E\u011fer kartta Dolar, Euro veya Sterlin borcu varsa tutarlar\u0131n\u0131 oku. E\u011fer d\u00f6viz borcu yoksa TEK C\u00dcMLEDE s\u00f6yle: 'Dolar, Euro ve Sterlin borcunuz bulunmamaktad\u0131r.'\n   - SON \u00d6DEME TAR\u0130H\u0130: lastPayDate tarihini a\u00e7\u0131k\u00e7a belirt (\u00f6r. '15 Ekim 2026').\n   - EK \u0130\u015eLEM TEKL\u0130F\u0130: Borcu okuduktan sonra: 'Hesap kesim tarihinizi de\u011fi\u015ftirebilir veya ekstrenizi e-postan\u0131za g\u00f6nderebilirim. Yard\u0131mc\u0131 olmam\u0131 ister misiniz?'. (E\u011fer contact_email_get sonucunda kay\u0131tl\u0131 e-posta yoksa e-posta se\u00e7ene\u011fini teklif etme!).\n\n3. HESAP KES\u0130M TAR\u0130H\u0130 DE\u011e\u0130\u015e\u0130KL\u0130\u011e\u0130:\n   - M\u00fc\u015fteri ekstre tarihini de\u011fi\u015ftirmek istedi\u011finde statement_week_get \u00e7a\u011f\u0131r. Kart\u0131n mevcut haftas\u0131n\u0131 ve bir sonraki ekstre tarihlerini s\u00f6yle.\n   - Yaln\u0131zca di\u011fer haftalar\u0131 se\u00e7enek olarak sun (\u00f6r. mevcut 2. haftaysa 1, 3 ve 4. haftalar\u0131 teklif et).\n   - M\u00fc\u015fteri hafta se\u00e7ince statement_week_decide ile \u00f6nizleme yap ve yeni tarihleri oku.\n   - A\u00c7IK TEY\u0130T AL: 'De\u011fi\u015fikli\u011fi onayl\u0131yor musunuz?' diye sor. 'Olur herhalde' gibi mu\u011flak ifadeleri kabul etme, net teyit iste. Yaln\u0131zca net 'Evet' yan\u0131t\u0131 gelince statement_week_change \u00e7a\u011f\u0131r. Sonucu ve yeni tarihleri bildir.\n\n4. E-POSTA \u0130LE EKSTRE G\u00d6NDER\u0130M\u0130:\n   - contact_email_get \u00e7a\u011f\u0131r. Kay\u0131tl\u0131 e-posta yoksa g\u00f6nderilemeyece\u011fini s\u00f6yle.\n   - Yaln\u0131zca EN SON D\u00d6NEM\u0130N ekstresi g\u00f6nderilebilir. Ge\u00e7mi\u015f d\u00f6nem ekstresi istenirse yaln\u0131zca son d\u00f6nemin g\u00f6nderilebilece\u011fini a\u00e7\u0131k\u00e7a s\u00f6yle.\n   - Kay\u0131tl\u0131 e-posta adresini oku ve a\u00e7\u0131k onay ('Evet') iste. Net onay gelince statement_pdf_send \u00e7a\u011f\u0131r ve ba\u015far\u0131yla g\u00f6nderildi\u011fini teyit et.\n\n5. G\u00dcVENL\u0130K VE AKTARIM KURALLARI:\n   - M\u00fc\u015fteri istese bile kart\u0131n ilk 6 veya ilk 12 hanesini ASLA s\u00f6yleme; sadece son 4 hane kullan\u0131l\u0131r.\n   - E\u015f, akraba veya ba\u015fkas\u0131n\u0131n kart\u0131 i\u00e7in bilgi verilmez ve i\u015flem yap\u0131lmaz ('G\u00fcvenlik nedeniyle yaln\u0131zca kendi kart\u0131n\u0131z i\u00e7in i\u015flem yapabilirsiniz').\n   - \u00d6deme yapmak isteyen veya m\u00fc\u015fteri temsilcisi isteyen m\u00fc\u015fterileri temsilciye aktar.\n   - Kapan\u0131\u015f: 'Freya Bank'\u0131 tercih etti\u011finiz i\u00e7in te\u015fekk\u00fcr ederiz. \u0130yi g\u00fcnler dileriz.' de ve \u00e7a\u011fr\u0131y\u0131 sonland\u0131r.",
+    "interruptible": true,
+    "max_node_turns": null,
+    "response_mapping": [],
+    "extraction_schema": [],
+    "max_turn_transition": null,
+    "truncation_strategy": "keep_all",
+    "suppress_tool_results": false,
+    "truncation_window_size": 10,
+    "on_enter_first_entry_only": false,
+    "disable_inactivity_monitor": false,
+    "passthrough_default_transition": null,
+    "return_to_previous_on_interrupt": false
+   }
+  },
+  "tools": [
+   {
+    "type": "function",
+    "config": {
+     "timeoutMs": 10000
+    },
+    "function": {
+     "name": "end_call",
+     "handler": "__function__:end_call",
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "message_mode": {
+        "type": "string",
+        "default": "none"
+       },
+       "interruptible": {
+        "type": "boolean",
+        "default": true
+       },
+       "trigger_pattern": {
+        "type": "string",
+        "default": "\u0130yi g\u00fcnler|iyi g\u00fcnler|ho\u015f\u00e7a kal\u0131n|ho\u015f\u00e7akal\u0131n"
+       },
+       "trigger_timeout": {
+        "type": "number",
+        "default": 3
+       },
+       "trigger_pattern_both": {
+        "type": "string",
+        "default": "te\u015fekk\u00fcrler|te\u015fekk\u00fcr ederim|sa\u011folun|sa\u011fol|iyi g\u00fcnler|ho\u015f\u00e7akal|ho\u015f\u00e7a kal\u0131n|baybay"
+       }
+      }
+     },
+     "description": "G\u00f6r\u00fc\u015fmeyi sonland\u0131r\u0131r. '\u0130yi g\u00fcnler dileriz.' ifadesi \u00e7a\u011fr\u0131y\u0131 otomatik sonland\u0131r\u0131r."
+    }
+   }
+  ],
+  "agent_config": {
+   "llmConfig": {
+    "model": "experimental-5",
+    "tools": [
+     {
+      "type": "function",
+      "function": {
+       "name": "end_call",
+       "handler": "__function__:end_call",
+       "parameters": {
+        "type": "object",
+        "properties": {}
+       },
+       "description": "This is used to technically terminate the call after all the customer's questions have been answered and necessary information has been provided.\n- It should only be triggered SILENTLY in the background after the customer-related workflow is complete; never mention this tool or its name to the customer."
+      }
+     }
+    ],
+    "apiKey": null,
+    "baseUrl": null,
+    "provider": "experimental-5",
+    "maxTokens": 1000,
+    "clientType": null,
+    "temperature": 0.7,
+    "firstMessage": "Selam! Sana nas\u0131l yard\u0131mc\u0131 olabilirim?",
+    "systemPrompt": "You are a helpful assistant. Your role is to help users with their tasks. Always be friendly and professional. You can use `end_call` tool after you say goodbye to customer to hang up if call about to finish.",
+    "firstMessageMode": "assistant-speaks-first",
+    "additionalSettings": {},
+    "disableInterruptionsDuringFirstMessage": true
+   },
+   "sttConfig": {
+    "model": "freya-stt",
+    "apiKey": null,
+    "baseUrl": null,
+    "language": "tr",
+    "provider": "Freya",
+    "confidenceReask": {
+     "enabled": false,
+     "reaskMode": "phrase",
+     "reduction": "min",
+     "threshold": 0.3,
+     "reaskPhrases": null,
+     "disableOnDigitNodes": true,
+     "maxConsecutiveReasks": 2
+    },
+    "additionalSettings": {
+     "diarize": false,
+     "punctuate": true,
+     "streaming": true,
+     "aicEnabled": false,
+     "krispEnabled": false,
+     "smartTurnEnabled": true
+    }
+   },
+   "ttsConfig": {
+    "model": "freya-tts",
+    "apiKey": null,
+    "baseUrl": null,
+    "voiceId": "leyla",
+    "language": "tr",
+    "provider": "Freya",
+    "stopSpeakingPlan": {
+     "voiceSeconds": 0.1,
+     "numberOfWords": 2,
+     "backOffSeconds": 0.4,
+     "interruptionPhrases": [
+      "dur",
+      "bekle",
+      "bir dakika",
+      "bir saniye",
+      "dursana",
+      "bekle bi",
+      "anlamad\u0131m",
+      "ne diyon",
+      "ne diyorsun",
+      "ne dedin",
+      "yeter"
+     ],
+     "acknowledgementPhrases": [
+      "h\u0131",
+      "evet",
+      "tamam",
+      "aynen",
+      "okey",
+      "okay",
+      "anlad\u0131m",
+      "hee",
+      "ee",
+      "eee",
+      "\u0131\u0131",
+      "\u0131\u0131\u0131",
+      "ha",
+      "h\u0131-h\u0131",
+      "ha-ha",
+      "tabi",
+      "tabii",
+      "peki",
+      "tamamd\u0131r",
+      "h\u0131 h\u0131",
+      "h\u0131m",
+      "h\u0131mm",
+      "h\u0131h\u0131",
+      "haha",
+      "he",
+      "hahaha"
+     ]
+    },
+    "startSpeakingPlan": {
+     "waitSeconds": 0.5,
+     "backgroundNoisePhrases": [
+      "arka plan sesi",
+      "klavye sesi",
+      "klavye sesleri",
+      "\u00f6ks\u00fcr\u00fck",
+      "\u00f6ks\u00fcr\u00fck sesi",
+      "video sesi",
+      "video kayd\u0131",
+      "\u00e7\u0131lg\u0131n ses",
+      "\u00e7\u0131lg\u0131n kahkaha",
+      "g\u00fcl\u00fc\u015f",
+      "ses ses ses",
+      "\u00e7\u0131k \u00e7\u0131k \u00e7\u0131k",
+      "sim",
+      "sim izle"
+     ]
+    },
+    "textSubstitutions": [
+     {
+      "pattern": "@",
+      "replacement": "at"
+     },
+     {
+      "pattern": "\\$",
+      "replacement": "dollars"
+     },
+     {
+      "pattern": "%",
+      "replacement": "percent"
+     },
+     {
+      "pattern": "&",
+      "replacement": "and"
+     },
+     {
+      "pattern": "\\+",
+      "replacement": "plus"
+     },
+     {
+      "pattern": "turkishairlines",
+      "replacement": "turkish airlines",
+      "caseInsensitive": true
+     }
+    ],
+    "additionalSettings": {
+     "speed": 1,
+     "stability": 0.5,
+     "similarity_boost": 0.75
+    },
+    "speechNormalization": {
+     "urls": true,
+     "names": false,
+     "emails": true,
+     "emojis": true,
+     "phoneNumbers": false,
+     "generalNumbers": false,
+     "identityNumbers": false
+    }
+   },
+   "dtmfConfig": {
+    "prefix": "DTMF: ",
+    "enabled": false,
+    "timeout": 2,
+    "terminationDigit": "#"
+   },
+   "syncSource": null,
+   "privacyConfig": {
+    "enableRecording": true,
+    "getRecordingConsent": false,
+    "recordingConsentText": null
+   },
+   "complianceConfig": {
+    "soc2": false,
+    "pciDss": false,
+    "euAiAct": false,
+    "mifidIi": false
+   },
+   "routingLlmConfig": null,
+   "backgroundSoundUrl": null,
+   "piiRedactionConfig": {
+    "enabled": false,
+    "maskIban": true,
+    "maskEmail": true,
+    "maskPhone": true,
+    "customRules": [],
+    "maskNationalId": true,
+    "maskPaymentCard": true
+   },
+   "voicemailDetection": {
+    "enabled": false,
+    "messageMode": "none",
+    "staticMessage": null,
+    "voicemailResponseDelay": 2
+   },
+   "callTimeoutSettings": {
+    "maxRetries": 2,
+    "dynamicWait": null,
+    "checkInMessage": null,
+    "closureMessage": null,
+    "silenceTimeout": 10,
+    "maximumDuration": 600,
+    "maxDurationEndCall": {
+     "llmPrompt": null,
+     "messageMode": "llm",
+     "interruptible": false,
+     "spokenMessage": null,
+     "triggerTimeout": null
+    },
+    "silenceTimeoutPrompt": null
+   },
+   "extractionLlmConfig": null,
+   "postConversationAnalysis": {
+    "analysisModel": null,
+    "summaryPrompt": null,
+    "autoDetectProblems": false,
+    "problemDetectionPrompt": null,
+    "problemDetectionInstructions": null
+   }
+  },
+  "global_nodes": {},
+  "initial_node": "statement_assistant",
+  "system_prompt": "Sen Freya Bank'\u0131n sesli dijital asistan\u0131s\u0131n. M\u00fc\u015fterilere kredi kart\u0131 ekstre borcu, hesap kesim tarihi ve e-posta ekstre g\u00f6nderimi konular\u0131nda T\u00fcrk\u00e7e olarak yard\u0131mc\u0131 olursun. T\u00fcm konu\u015fmalar do\u011fal T\u00fcrk\u00e7e telefon \u00fcslubuyla (en fazla 1-2 k\u0131sa c\u00fcmle) yap\u0131l\u0131r. G\u00f6r\u00fc\u015fme zaman\u0131: {{now}}.",
+  "test_variables": {
+   "now": "2026-10-12T10:30:00+03:00",
+   "customerNumber": "95004361"
+  }
+ }
+}
