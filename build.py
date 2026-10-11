@@ -421,7 +421,7 @@ def main():
     # Rule 91: Write audit trace log
     traces_dir = ROOT / "traces"
     traces_dir.mkdir(exist_ok=True)
-    trace_file = traces_dir / "final.log"
+    trace_file = traces_dir / "final_trace.log"
     trace_content = (
         f"=== Freya Autonomous Builder Run Trace: final ===\n"
         f"Start Time: {start_time_iso}\n"
@@ -442,15 +442,11 @@ def main():
     trace_file.write_text(trace_content, encoding="utf-8")
     print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Audit trace written to: {trace_file}")
 
-    # Generate submission.json
+    # Generate submission.json following official schema
     submission_json = {
-        "team": "Freya Agent Builder",
-        "members": [{"name": "Emre Derman", "email": "emre.derman@ug.bilkent.edu.tr"}],
-        "repo": "https://github.com/emredermann/freya-agent-builder.git",
-        "commit": git_commit,
-        "run_command": f"python3 build.py {case_folder_arg} {mock_url_arg}",
+        "members": ["Emre Derman"],
         "workflow": "submission/final.workflow.json",
-        "trace": "traces/final.log",
+        "trace": "traces/final_trace.log",
         "mock_url": mock_url_arg,
     }
     sub_file = ROOT / "submission.json"

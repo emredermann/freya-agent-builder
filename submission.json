@@ -1,15 +1,8 @@
 {
-  "team": "Freya Agent Builder",
   "members": [
-    {
-      "name": "Emre Derman",
-      "email": "emre.derman@ug.bilkent.edu.tr"
-    }
+    "Emre Derman"
   ],
-  "repo": "https://github.com/emredermann/freya-agent-builder.git",
-  "commit": "ddfdcb986544502160375b2fa90e91539ea2865f",
-  "run_command": "python3 build.py final_case https://freya-bank-mock.freyavoice.workers.dev",
   "workflow": "submission/final.workflow.json",
-  "trace": "traces/final.log",
-  "mock_url": "https://freya-bank-mock.freyavoice.workers.dev"
+  "trace": "traces/final_trace.log",
+  "mock_url": "https://freya-bank-mock.delightful-mass-fe3.workers.dev"
 }

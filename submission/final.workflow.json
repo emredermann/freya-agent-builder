@@ -1,7 +1,7 @@
 {
  "workflow_id": "56713f2d-0993-4927-afe7-2b1f872f04d7",
  "agent_id": "2bfd3773-5ead-443e-aa05-807cd7411691",
- "updated_at": "2026-10-11T18:05:29.410Z",
+ "updated_at": "2026-10-11T18:08:43.158Z",
  "workflow": {
   "nodes": {
    "statement_assistant": {
@@ -21,7 +21,7 @@
         "properties": {
          "url": {
           "type": "string",
-          "default": "https://freya-bank-mock.freyavoice.workers.dev/voice/v1/cards.list"
+          "default": "https://freya-bank-mock.delightful-mass-fe3.workers.dev/voice/v1/cards.list"
          },
          "body": {
           "type": "object",
@@ -82,7 +82,7 @@
         "properties": {
          "url": {
           "type": "string",
-          "default": "https://freya-bank-mock.freyavoice.workers.dev/voice/v1/cards.balance"
+          "default": "https://freya-bank-mock.delightful-mass-fe3.workers.dev/voice/v1/cards.balance"
          },
          "body": {
           "type": "object",
@@ -142,7 +142,7 @@
         "properties": {
          "url": {
           "type": "string",
-          "default": "https://freya-bank-mock.freyavoice.workers.dev/voice/v1/statement.week.get"
+          "default": "https://freya-bank-mock.delightful-mass-fe3.workers.dev/voice/v1/statement.week.get"
          },
          "body": {
           "type": "object",
@@ -202,7 +202,7 @@
         "properties": {
          "url": {
           "type": "string",
-          "default": "https://freya-bank-mock.freyavoice.workers.dev/voice/v1/statement.week.decide"
+          "default": "https://freya-bank-mock.delightful-mass-fe3.workers.dev/voice/v1/statement.week.decide"
          },
          "body": {
           "type": "object",
@@ -271,7 +271,7 @@
         "properties": {
          "url": {
           "type": "string",
-          "default": "https://freya-bank-mock.freyavoice.workers.dev/voice/v1/statement.week.change"
+          "default": "https://freya-bank-mock.delightful-mass-fe3.workers.dev/voice/v1/statement.week.change"
          },
          "body": {
           "type": "object",
@@ -340,7 +340,7 @@
         "properties": {
          "url": {
           "type": "string",
-          "default": "https://freya-bank-mock.freyavoice.workers.dev/voice/v1/contact.email.get"
+          "default": "https://freya-bank-mock.delightful-mass-fe3.workers.dev/voice/v1/contact.email.get"
          },
          "body": {
           "type": "object",
@@ -401,7 +401,7 @@
         "properties": {
          "url": {
           "type": "string",
-          "default": "https://freya-bank-mock.freyavoice.workers.dev/voice/v1/statement.pdf.send"
+          "default": "https://freya-bank-mock.delightful-mass-fe3.workers.dev/voice/v1/statement.pdf.send"
          },
          "body": {
           "type": "object",
