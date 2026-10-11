@@ -125,16 +125,5 @@ python tools/run_cases.py <AGENT_ID> --brief B --reps 3
 
 ---
 
-## 📋 Hackathon Submission Compliance Checklist
-
-- [x] **Sub-30-Minute Execution:** Runs in ~2-3 seconds per brief.
-- [x] **Zero Hardcoded Domain Logic:** All dates, bank names, holiday calendars, deadlines, and identity fields are extracted dynamically.
-- [x] **Offline Validation:** Automated pre-upload validation prevents invalid schemas and runtime silence timeouts.
-- [x] **Rule 75 Artifact Export:** Live workflow JSON is fetched and exported directly from Freya to `out/<slot>.workflow.json`.
-- [x] **Rule 91 Audit Trace Logging:** Comprehensive execution traces with timestamps, synthesized nodes, IDs, and validation results written to `traces/<slot>.log`.
-- [x] **Secrets Sanitization:** Complete `.gitignore` policy strictly excluding `.env`, `env.sh`, virtual environments, and API tokens.
-
----
-
 ## 📄 License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
